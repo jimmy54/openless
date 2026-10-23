@@ -12,7 +12,8 @@ name: Release Tauri (cross-platform)
 #   - With APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD / APPLE_ID /
 #     APPLE_PASSWORD / APPLE_TEAM_ID configured, Tauri performs Developer ID signing and
 #     notarization; users downloading from a browser do not need manual xattr.
-#   - Without Apple secrets, falls back to ad-hoc signing; GitHub Actions prints a warning.
+#   - A tag release missing those secrets fails (see Check Apple signing availability).
+#     Manual dispatch may still fall back to ad-hoc signing.
 #   - Windows is unsigned (no certificate); Win 11 SmartScreen warns "Unknown publisher" and the
 #     user clicks "Run anyway".
 #   - One platform failing does not stop the other from building (fail-fast: false).
@@ -197,8 +198,10 @@ jobs:
             fi
           done
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::warning::macOS release will use ad-hoc signing because Apple signing/notarization secrets are missing: ${missing[*]}"
+            echo "::error::macOS tag release requires Developer ID signing and notarization secrets; missing: ${missing[*]}. Without them users must run 'xattr -cr /Applications/OpenLess.app' after install. See docs/macos-signing.md."
+            exit 1
           fi
+          echo "Apple signing/notarization secrets present."
 
       - name: Import Apple Developer ID certificate
         if: startsWith(matrix.platform, 'macos')
@@ -662,8 +665,20 @@ jobs:
       - name: Prepare release body prelude
         if: matrix.updater-target == 'darwin' && matrix.updater-arch == 'aarch64' && env.OPENLESS_RELEASE_IS_TAG == 'true'
         shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
         run: |
-          cat > "$RUNNER_TEMP/release-body.md" << 'EOF'
+          if [ -n "${APPLE_CERTIFICATE:-}" ] && [ -n "${APPLE_ID:-}" ]; then
+            cat > "$RUNNER_TEMP/release-body.md" << 'EOF'
+          ### macOS 用户首次安装提示
+
+          下载 DMG，拖入 `/Applications`，直接打开即可：本版本已做 Developer ID 签名，`.app` 与 DMG 均通过 Apple 公证并附带票据，无需任何手工操作。
+
+          若 Gatekeeper 仍提示无法打开，请先在「系统设置 → 隐私与安全性」确认没有旧版本的拦截记录，并确认下载未被中间网络替换（可在本页核对 SHA-256）。
+          EOF
+          else
+            cat > "$RUNNER_TEMP/release-body.md" << 'EOF'
           ### macOS 用户首次安装提示
 
           下载 DMG 拖入 `/Applications` 后，**必须**在终端运行：
@@ -672,7 +687,10 @@ jobs:
           xattr -cr /Applications/OpenLess.app
           ```
 
-          否则 Gatekeeper 会提示「OpenLess 已损坏」——这是因为当前 build 用 ad-hoc 签名、没做 Apple 公证。
+          否则 Gatekeeper 会提示「OpenLess 已损坏」——本次构建未配置 Apple 签名/公证凭据，用 ad-hoc 签名，不能通过 Gatekeeper。
+          EOF
+          fi
+          cat >> "$RUNNER_TEMP/release-body.md" << 'EOF'
 
           ### 渠道说明
 

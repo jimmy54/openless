@@ -226,7 +226,10 @@ Every item below is one more layer sedimented into a default — a capability yo
 
 Go to [Releases](https://github.com/Open-Less/openless/releases) and download:
 
-- **macOS**: `OpenLess_<version>_aarch64.dmg` (Apple Silicon) or `OpenLess_<version>_x64.dmg` (Intel). Open it, drag the app to `/Applications`, **then run the following once in Terminal to bypass the Gatekeeper "damaged" warning** (the build is ad-hoc signed, not Apple-notarized):
+- **macOS**: `OpenLess_<version>_aarch64.dmg` (Apple Silicon) or `OpenLess_<version>_x64.dmg` (Intel). Open it, drag the app to `/Applications`, and launch — official releases are Developer ID signed, and both the `.app` and the DMG are notarized by Apple, so no manual step is needed.
+
+  Older builds (or ad-hoc builds from a manual workflow run) are not notarized and will trigger the Gatekeeper "damaged" warning. For those only, run once:
+
   ```bash
   xattr -cr /Applications/OpenLess.app
   ```
@@ -244,7 +247,6 @@ Go to [Releases](https://github.com/Open-Less/openless/releases) and download:
   ```bash
   brew tap Open-Less/openless https://github.com/Open-Less/openless
   brew install --cask openless
-  xattr -cr /Applications/OpenLess.app
 
   # Upgrade to the latest version
   brew update && brew upgrade openless

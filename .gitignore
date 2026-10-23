@@ -12,6 +12,10 @@ ChatGPT Image*.jpg
 *.env
 config.local.json
 .local-secrets/
+# macOS 签名相关：p12 含私钥、cer 是本地存放证书的目录，都不入版本库
+cer/
+*.p12
+*.cer
 # Tauri updater 签名私钥（绝不上传 — 公钥在 tauri.conf.json，私钥放 GitHub Secret）
 *.key
 *.key.pub

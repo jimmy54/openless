@@ -35,6 +35,7 @@
 - [火山引擎 ASR 配置](volcengine-setup.md)
 - [讯飞（iflytek）ASR 配置](xfyun-asr.md)
 - [百炼（DashScope）ASR 模型](bailian-asr-models.md)
+- [macOS 签名与公证（Developer ID）](macos-signing.md)：证书生成、p12/Secrets 配置、验证与故障排查。
 - [Tauri CSP 边界](tauri-csp.md)
 - [Gemini 专用转写](gemini-transcribe.md)：模型、请求形态与失败边界。
 - [腾讯混元实时 ASR 长语音](tencent-long-audio.md)：分段策略与结束判定。

@@ -6,6 +6,9 @@ dist/
 .vite/
 .artifacts/
 
+# macOS 签名凭据（含 App 专用密码与 p12 路径），只存在本地
+scripts/macos-signing.env
+
 # Tauri
 src-tauri/target/
 src-tauri/gen/

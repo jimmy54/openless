@@ -233,7 +233,9 @@ OpenLess 只做一件事:**把语音变成可用的书面文字(尤其是 AI 提
 
 前往 [Releases](https://github.com/Open-Less/openless/releases) 下载:
 
-- **macOS**:`OpenLess_<version>_aarch64.dmg`(Apple Silicon)或 `OpenLess_<version>_x64.dmg`(Intel)。打开后将应用拖入 `/Applications`,**然后在终端执行一次以下命令,以绕过 Gatekeeper 的“已损坏”提示**(该构建为 ad-hoc 签名,未经 Apple 公证):
+- **macOS**:`OpenLess_<version>_aarch64.dmg`(Apple Silicon)或 `OpenLess_<version>_x64.dmg`(Intel)。打开后将应用拖入 `/Applications`,直接启动即可:正式版已做 Developer ID 签名,`.app` 与 DMG 均通过 Apple 公证并附带票据,无需任何手工操作。
+
+  旧版本(或手动 workflow 产出的 ad-hoc 构建)未经公证,会触发 Gatekeeper 的“已损坏”提示,只有这种情况才需要执行一次:
   ```bash
   xattr -cr /Applications/OpenLess.app
   ```
@@ -251,7 +253,6 @@ OpenLess 只做一件事:**把语音变成可用的书面文字(尤其是 AI 提
   ```bash
   brew tap Open-Less/openless https://github.com/Open-Less/openless
   brew install --cask openless
-  xattr -cr /Applications/OpenLess.app
 
   # 升级到最新版本
   brew update && brew upgrade openless
