@@ -142,7 +142,7 @@ cd app
 
 ## Release Signing
 
-Tagged Tauri releases (`v*-tauri`) must be Developer ID signed and notarized so users can download and open the macOS app without manually removing quarantine attributes. Linux packages use the separate manual egui workflow and an independent minisign secret.
+Tagged Tauri releases (`v*-tauri`) must be Developer ID signed and notarized so users can download and open the macOS app without manually removing quarantine attributes. Linux packages use the separate manual egui workflow and an independent minisign secret. Certificate generation, p12 export, and troubleshooting: [docs/macos-signing.md](../docs/macos-signing.md).
 
 Required GitHub secrets:
 

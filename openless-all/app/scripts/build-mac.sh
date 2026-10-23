@@ -91,7 +91,7 @@ fi
 # hdiutil DMG bypasses those steps and the bundle contract tests explicitly forbid it. Missing
 # DMG = fail, no fallback.
 if [ ! -f "$DMG_PATH" ]; then
-  echo "✗ 未找到本次构建的 DMG：$DMG_PATH（tauri build 未完成打包）"
+  echo "✗ 未找到本次构建的 DMG：${DMG_PATH}（tauri build 未完成打包）"
   exit 1
 fi
 
@@ -126,13 +126,47 @@ if [ "$HAS_DEVELOPER_ID" = "1" ] && [ "$HAS_NOTARIZATION_CREDENTIALS" = "1" ]; t
   echo "▶ 校验 Gatekeeper 与公证票据"
   spctl --assess --type execute --verbose=2 "$APP"
   xcrun stapler validate "$APP"
+
+  # Tauri 只公证 .app，DMG 是之后才打出来的、从未提交公证。签名但未公证的 DMG
+  # 会被 Gatekeeper 判为 "Unnotarized Developer ID"（primary-signature 上下文），
+  # 用户双击打开下载来的映像时仍会被拦，所以这里必须补一次公证 + staple。
+  # APPLE_API_KEY 风格凭据下 Tauri 用文件名里的 key id，这里保持一致。
+  notarytool_submit_dmg() {
+    if [ -n "${APPLE_API_KEY:-}" ] && [ -n "${APPLE_API_ISSUER:-}" ]; then
+      local key_id="${APPLE_API_KEY_ID:-$(basename "$APPLE_API_KEY" | sed -n 's/^AuthKey_\([A-Z0-9]*\)\.p8$/\1/p')}"
+      if [ -z "$key_id" ]; then
+        echo "✗ 使用 APPLE_API_KEY 时需要 APPLE_API_KEY_ID，或把密钥命名为 AuthKey_<KEYID>.p8"
+        exit 1
+      fi
+      xcrun notarytool submit "$DMG_PATH" --key "$APPLE_API_KEY" --key-id "$key_id" --issuer "$APPLE_API_ISSUER" --wait
+    else
+      xcrun notarytool submit "$DMG_PATH" \
+        --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+    fi
+  }
+
+  if xcrun stapler validate "$DMG_PATH" > /dev/null 2>&1; then
+    echo "✓ DMG 已带公证票据，跳过重复公证（${DMG_PATH}）"
+  else
+    echo "▶ 提交 DMG 公证（Tauri 不会做这一步）：${DMG_PATH}"
+    notarytool_submit_dmg
+    echo "▶ staple DMG"
+    xcrun stapler staple "$DMG_PATH"
+  fi
+
   xcrun stapler validate "$DMG_PATH"
+  # 这一步才是用户双击下载来的 DMG 时 Gatekeeper 实际执行的检查。
+  spctl -a -t open --context context:primary-signature -v "$DMG_PATH"
 fi
 
 echo "▶ 清理发布产物扩展属性"
+# bundle_dmg.sh leaves 200MB+ rw.*.dmg intermediates in dmg/ or macos/ when packaging
+# fails. dmg/*.dmg is the release asset glob, so those half-built images must be removed.
+find "$DMG_DIR" "$(dirname "$APP")" -maxdepth 1 -name 'rw.*.dmg' -delete 2> /dev/null || true
+
 # This only guarantees the CI/local build artifacts themselves are clean; browser downloads may
-# still re-add quarantine. The real fix sparing users manual xattr is Developer ID signing +
-# Apple notarization.
+# still re-add quarantine. The real fix sparing users manual xattr is Developer ID signing plus
+# Apple notarization of both the .app and the DMG.
 xattr -cr "$APP" 2> /dev/null || true
 find "$DMG_DIR" -maxdepth 1 -name '*.dmg' -exec xattr -c {} \; 2> /dev/null || true
 
